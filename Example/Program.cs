@@ -7,9 +7,9 @@ const int authId = 1;
 Message? response;
 
 response = await client.SendAsync(
-    id: 0,
+    id: authId,
     type: MessageType.Auth,
-    body: "minecraft",
+    body: "your RCON password here",
     cancellationToken: default);
 
 switch (response)
@@ -20,7 +20,7 @@ switch (response)
     case { Id: -1, Type: MessageType.AuthResponse }:
         Console.WriteLine("Auth failed (invalid password)");
         return;
-    case { Id: authId, Type: MessageType.AuthResponse}:
+    case not { Id: authId, Type: MessageType.AuthResponse }:
         Console.WriteLine($"Unknown response: {response}");
         return;
 }
