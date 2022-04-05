@@ -2,8 +2,10 @@
 
 ## Description
 
-A lightweight wrapper around `TcpClient` to send and receive messages asynchronously from [Source RCON Protocol](https://developer.valvesoftware.com/wiki/Source_RCON_Protocol) compatible servers.  
-This is a very simple/dumb implementation and concurrently sending multiple messages is not supported as the send method returns the first received message after sending as a response.
+A lightweight wrapper around `TcpClient` to send and receive messages asynchronously to/from
+[Source RCON Protocol](https://developer.valvesoftware.com/wiki/Source_RCON_Protocol) compatible servers.  
+This is a very simple/dumb implementation and concurrently sending multiple messages is not supported,
+as the send method returns the first received message after sending.
 
 ## Minecraft Example
 
