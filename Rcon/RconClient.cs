@@ -18,8 +18,8 @@ public class RconClient : IRconClient, IDisposable
     private const int s_minimumSize = sizeof(int) * 2 + 2;
 
     private readonly IClient _client;
+    private Stream? _stream;
     private PipeReader? _reader;
-    private BinaryWriter? _writer;
 
     public RconClient()
     {
@@ -31,7 +31,7 @@ public class RconClient : IRconClient, IDisposable
         _client = client ?? throw new ArgumentNullException(nameof(client));
     }
 
-    [MemberNotNullWhen(true, nameof(_reader), nameof(_writer))]
+    [MemberNotNullWhen(true, nameof(_reader), nameof(_stream))]
     public bool Connected { get; private set; }
     public Encoding Encoding { get; init; } = Encoding.Latin1;
 
@@ -39,15 +39,14 @@ public class RconClient : IRconClient, IDisposable
     {
         Connected = false;
         (_client as IDisposable)?.Dispose();
-        _writer?.Dispose();
+        _stream?.Dispose();
     }
 
     public async ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken = default)
     {
         await _client.ConnectAsync(host, port, cancellationToken);
-        var stream = _client.GetStream();
-        _reader = PipeReader.Create(stream, new StreamPipeReaderOptions(useZeroByteReads: true));
-        _writer = new BinaryWriter(stream, Encoding);
+        _stream = _client.GetStream();
+        _reader = PipeReader.Create(_stream, new StreamPipeReaderOptions(useZeroByteReads: true));
 
         Connected = true;
     }
@@ -60,16 +59,25 @@ public class RconClient : IRconClient, IDisposable
         if (!Connected)
             throw new InvalidOperationException("Client is not connected");
 
-        // Manually allocating the byte array because BinaryWriter#Write(string value)
+        int bodyLength = Encoding.GetByteCount(message.Body);
+        byte[] buff = new byte[sizeof(int) + s_minimumSize + bodyLength];
+        await using var stream = new MemoryStream(buff);
+        await using var writer = new BinaryWriter(stream, Encoding);
+
+        writer.Write(s_minimumSize + bodyLength); // Size
+        writer.Write(message.Id); // ID
+        writer.Write((int)message.Type); // Type
+
+        // Manually writing to the byte array because BinaryWriter#Write(string value)
         // method prefixes the output with the string length which we do not want here.
-        byte[] body = Encoding.GetBytes(message.Body);
-        _writer.Write(s_minimumSize + body.Length); // Size
-        _writer.Write(message.Id); // ID
-        _writer.Write((int)message.Type); // Type
-        _writer.Write(body); // Body
-        _writer.Write((byte)0); // Null-terminated string
-        _writer.Write((byte)0); // Terminator
-        _writer.Flush();
+        Encoding.GetBytes(message.Body, buff.AsSpan()[(int)stream.Position..]);
+        stream.Position += bodyLength;
+
+        writer.Write((byte)0); // Null-terminated string
+        writer.Write((byte)0); // Terminator
+
+        _stream.Write(buff);
+        await _stream.FlushAsync(cancellationToken);
 
         var result = await _reader.ReadAtLeastAsync(s_minimumSize, cancellationToken);
         try
