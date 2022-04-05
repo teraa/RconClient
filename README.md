@@ -15,48 +15,57 @@ using Teraa.Rcon;
 using var client = new RconClient();
 await client.ConnectAsync("localhost", 25575, cancellationToken: default);
 
+const int authId = 1;
 Message? response;
 
 response = await client.SendAsync(
-    id: 1,
+    id: 0,
     type: MessageType.Auth,
-    body: "password",
+    body: "minecraft",
     cancellationToken: default);
 
-if (response is null)
+switch (response)
 {
-    // No response
-}
-else if (response.Value is { Id: -1, Type: MessageType.AuthResponse } )
-{
-    // Auth failed (invalid password)
-}
-else if (response.Value is not ({ Id: 1 } or { Type: MessageType.AuthResponse }))
-{
-    // Invalid response
-}
-else
-{
-    // Ok
+    case null:
+        Console.WriteLine("Auth failed (no response)");
+        return;
+    case { Id: -1, Type: MessageType.AuthResponse }:
+        Console.WriteLine("Auth failed (invalid password)");
+        return;
+    case { Id: authId, Type: MessageType.AuthResponse}:
+        Console.WriteLine($"Unknown response: {response}");
+        return;
 }
 
-response = await client.SendAsync(
-    id: 2,
-    type: MessageType.Command,
-    body: "list",
-    cancellationToken: default);
+Console.WriteLine("Authenticated");
+Console.WriteLine("Type commands or Q to quit.");
 
-if (response is null)
+int id = authId + 1;
+while (true)
 {
-    // No response
-}
-else if (response.Value is not ({ Id: 2 } or { Type: MessageType.CommandResponse }))
-{
-    // Invalid response
-}
-else
-{
-    // Ok
+    Console.Write(">");
+    string? input = Console.ReadLine();
+    if (input is null or "q" or "Q")
+        break;
+
+    id++;
+
+    response = await client.SendAsync(
+        id: id,
+        type: MessageType.Command,
+        body: input,
+        cancellationToken: default);
+
+    if (response is null)
+    {
+        Console.WriteLine("No response received");
+        break;
+    }
+
+    if (response.Value.Id != id || response.Value.Type != MessageType.CommandResponse)
+        Console.WriteLine($"Unknown response: {response}");
+    else
+        Console.WriteLine(response.Value.Body);
 }
 ```
 
