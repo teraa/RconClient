@@ -4,6 +4,19 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <AssemblyName>Teraa.Rcon</AssemblyName>
+    <RootNamespace>Teraa.Rcon</RootNamespace>
+    <PackageId>Teraa.RconClient</PackageId>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <Authors>teraa</Authors>
+    <Company>teraa</Company>
+    <PackageTags>RCON;Source RCON;Client</PackageTags>
+    <Description>A simple RCON Client for communication with Source RCON Protocol compatible servers</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/teraa/RconClient</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/teraa/RconClient</RepositoryUrl>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
