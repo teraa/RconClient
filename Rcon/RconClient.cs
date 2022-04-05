@@ -15,6 +15,8 @@ public interface IRconClient
 
 public class RconClient : IRconClient, IDisposable
 {
+    private const int s_minimumSize = sizeof(int) * 2 + 2;
+
     private readonly IClient _client;
     private PipeReader? _reader;
     private BinaryWriter? _writer;
@@ -61,11 +63,13 @@ public class RconClient : IRconClient, IDisposable
         // Manually allocating the byte array because BinaryWriter#Write(string value)
         // method prefixes the output with the string length which we do not want here.
         byte[] body = Encoding.GetBytes(message.Body);
-        _writer.Write(4 + 4 + body.Length + 1); // Size
+        _writer.Write(s_minimumSize + body.Length); // Size
         _writer.Write(message.Id); // ID
         _writer.Write((int)message.Type); // Type
         _writer.Write(body); // Body
+        _writer.Write((byte)0); // Null-terminated string
         _writer.Write((byte)0); // Terminator
+        _writer.Flush();
 
         var result = await _reader.ReadAtLeastAsync(s_minimumSize, cancellationToken);
         try
@@ -91,7 +95,7 @@ public class RconClient : IRconClient, IDisposable
         reader.TryReadLittleEndian(out int id);
         reader.TryReadLittleEndian(out int type);
 
-        byte[] body = new byte[length - 1 - 4 - 4 - 1];
+        byte[] body = new byte[length - s_minimumSize];
         ReadOnlySpan<byte> span = body.AsSpan();
 
         reader.TryReadTo(span: out span, delimiter: (byte) 0, advancePastDelimiter: false);
