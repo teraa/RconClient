@@ -67,23 +67,20 @@ public class RconClient : IRconClient, IDisposable
         _writer.Write(body); // Body
         _writer.Write((byte)0); // Terminator
 
-        while (true)
+        var result = await _reader.ReadAtLeastAsync(s_minimumSize, cancellationToken);
+        try
         {
-            var result = await _reader.ReadAtLeastAsync(4, cancellationToken);
-            try
-            {
-                if (result.IsCompleted || result.IsCanceled)
-                    return null;
+            if (result.IsCompleted || result.IsCanceled)
+                return null;
 
-                Debug.Assert(result.Buffer.Length >= 4);
+            Debug.Assert(result.Buffer.Length >= 4);
 
-                var response = ReadMessage(result.Buffer);
-                return response;
-            }
-            finally
-            {
-                _reader.AdvanceTo(result.Buffer.End);
-            }
+            var response = ReadMessage(result.Buffer);
+            return response;
+        }
+        finally
+        {
+            _reader.AdvanceTo(result.Buffer.End);
         }
     }
 
