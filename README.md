@@ -1,5 +1,7 @@
 # RCON Client
 
+[![NuGet](https://img.shields.io/nuget/v/Teraa.RconClient?label=NuGet&logo=nuget&color=blue)](https://www.nuget.org/packages/Teraa.RconClient/)
+
 ## Description
 
 A lightweight wrapper around `TcpClient` to send and receive messages asynchronously to/from
