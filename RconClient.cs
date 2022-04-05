@@ -13,7 +13,7 @@ public interface IRconClient
     ValueTask<Message?> SendAsync(Message message, CancellationToken cancellationToken = default);
 }
 
-public class RconClient : IDisposable
+public class RconClient : IRconClient, IDisposable
 {
     private readonly IClient _client;
     private PipeReader? _reader;
