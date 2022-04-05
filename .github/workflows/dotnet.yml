@@ -79,11 +79,11 @@ jobs:
     - name: Push (GitHub Packages)
       run: dotnet nuget push "nupkgs/*.nupkg" --source https://nuget.pkg.github.com/teraa/index.json --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
 
-    # - name: Push (NuGet.org)
-    #   if: >
-    #     (github.event_name == 'release') ||
-    #     (github.event_name == 'workflow_dispatch')
-    #   run: dotnet nuget push "nupkgs/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_TOKEN }} --skip-duplicate
+    - name: Push (NuGet.org)
+      if: >
+        (github.event_name == 'release') ||
+        (github.event_name == 'workflow_dispatch')
+      run: dotnet nuget push "nupkgs/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_TOKEN }} --skip-duplicate
 
 env:
   DOTNET_NOLOGO: true
