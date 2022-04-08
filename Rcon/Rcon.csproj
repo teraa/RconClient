@@ -8,7 +8,7 @@
     <AssemblyName>Teraa.Rcon</AssemblyName>
     <RootNamespace>Teraa.Rcon</RootNamespace>
     <PackageId>Teraa.RconClient</PackageId>
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>2.0.1</VersionPrefix>
     <Authors>teraa</Authors>
     <Company>teraa</Company>
     <PackageTags>Source;RCON;Client;Minecraft</PackageTags>
@@ -17,7 +17,6 @@
     <PackageProjectUrl>https://github.com/teraa/RconClient</PackageProjectUrl>
     <RepositoryUrl>https://github.com/teraa/RconClient</RepositoryUrl>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <PackageVersion>2.0.0</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
