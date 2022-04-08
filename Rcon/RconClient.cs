@@ -102,13 +102,9 @@ public class RconClient : IRconClient, IDisposable
         reader.TryReadLittleEndian(out int length);
         reader.TryReadLittleEndian(out int id);
         reader.TryReadLittleEndian(out int type);
+        reader.TryReadTo(span: out var span, delimiter: (byte) 0, advancePastDelimiter: false);
+        string body = Encoding.GetString(span);
 
-        byte[] body = new byte[length - s_minimumSize];
-        ReadOnlySpan<byte> span = body.AsSpan();
-
-        reader.TryReadTo(span: out span, delimiter: (byte) 0, advancePastDelimiter: false);
-        string bodyText = Encoding.GetString(span);
-
-        return new Message(id, (MessageType) type, bodyText);
+        return new Message(id, (MessageType)type, body);
     }
 }
