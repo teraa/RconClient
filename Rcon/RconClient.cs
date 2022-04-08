@@ -53,7 +53,7 @@ public class RconClient : IRconClient, IDisposable
             .ConfigureAwait(false);
 
         _stream = _client.GetStream();
-        _reader = PipeReader.Create(_stream, new StreamPipeReaderOptions(useZeroByteReads: true));
+        _reader = PipeReader.Create(_stream);
 
         Connected = true;
     }
@@ -96,17 +96,17 @@ public class RconClient : IRconClient, IDisposable
         using var stream = new MemoryStream(buffer);
         using var writer = new BinaryWriter(stream, Encoding);
 
-        writer.Write(MinimumSize + bodyLength); // Size
+        writer.Write(MinimumSize + bodyLength); // Size of rest of the message
         writer.Write(message.Id); // ID
         writer.Write((int)message.Type); // Type
 
-        // Manually writing to the byte array because BinaryWriter#Write(string value)
+        // Manually writing message body to the byte array because BinaryWriter#Write(string value)
         // method prefixes the output with the string length which we do not want here.
         Encoding.GetBytes(message.Body, buffer.AsSpan()[(int)stream.Position..]);
         stream.Position += bodyLength;
 
         writer.Write((byte)0); // Null-terminated string
-        writer.Write((byte)0); // Terminator
+        writer.Write((byte)0); // Message Terminator
 
         return buffer;
     }
