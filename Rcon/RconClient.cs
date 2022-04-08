@@ -20,7 +20,8 @@ public static class RconClientExtensions
 
 public class RconClient : IRconClient, IDisposable
 {
-    private const int MinimumSize = sizeof(int) * 2 + 2;
+    private const int BaseSize = sizeof(int) * 2 + sizeof(byte) * 2;
+    private const int MinimumBufferSize = sizeof(int) + BaseSize;
 
     private readonly IClient _client;
     private Stream? _stream;
@@ -70,7 +71,7 @@ public class RconClient : IRconClient, IDisposable
         await _stream.FlushAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var result = await _reader.ReadAtLeastAsync(MinimumSize, cancellationToken)
+        var result = await _reader.ReadAtLeastAsync(MinimumBufferSize, cancellationToken)
             .ConfigureAwait(false);
 
         try
@@ -78,7 +79,7 @@ public class RconClient : IRconClient, IDisposable
             if (result.IsCompleted || result.IsCanceled)
                 return default;
 
-            Debug.Assert(result.Buffer.Length >= MinimumSize);
+            Debug.Assert(result.Buffer.Length >= MinimumBufferSize);
 
             var response = ReadMessage(result.Buffer);
             return response;
@@ -92,11 +93,12 @@ public class RconClient : IRconClient, IDisposable
     private byte[] WriteMessage(Message message)
     {
         int bodyLength = Encoding.GetByteCount(message.Body);
-        byte[] buffer = new byte[sizeof(int) + MinimumSize + bodyLength];
+        byte[] buffer = new byte[MinimumBufferSize + bodyLength];
+
         using var stream = new MemoryStream(buffer);
         using var writer = new BinaryWriter(stream, Encoding);
 
-        writer.Write(MinimumSize + bodyLength); // Size of rest of the message
+        writer.Write(BaseSize + bodyLength); // Size of rest of the message
         writer.Write(message.Id); // ID
         writer.Write((int)message.Type); // Type
 
