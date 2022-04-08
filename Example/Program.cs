@@ -1,37 +1,39 @@
 using Teraa.Rcon;
 
 using var client = new RconClient();
-await client.ConnectAsync("localhost", 25575, cancellationToken: default);
+await client.ConnectAsync(
+    host: "localhost",
+    port: 25575,
+    cancellationToken: default);
 
 const int authId = 1;
-Message? response;
+Message response;
 
 response = await client.SendAsync(
     id: authId,
     type: MessageType.Auth,
-    body: "your RCON password here",
+    body: "password",
     cancellationToken: default);
 
 switch (response)
 {
-    case null:
-        Console.WriteLine("Auth failed (no response)");
-        return;
+    case { Id: authId, Type: MessageType.AuthResponse }:
+        Console.WriteLine("Authenticated");
+        break;
     case { Id: -1, Type: MessageType.AuthResponse }:
         Console.WriteLine("Auth failed (invalid password)");
         return;
-    case not { Id: authId, Type: MessageType.AuthResponse }:
+    default:
         Console.WriteLine($"Unknown response: {response}");
         return;
 }
 
-Console.WriteLine("Authenticated");
 Console.WriteLine("Type commands or Q to quit.");
 
 int id = authId + 1;
 while (true)
 {
-    Console.Write(">");
+    Console.Write("> ");
     string? input = Console.ReadLine();
     if (input is null or "q" or "Q")
         break;
@@ -44,14 +46,8 @@ while (true)
         body: input,
         cancellationToken: default);
 
-    if (response is null)
-    {
-        Console.WriteLine("No response received");
-        break;
-    }
-
-    if (response.Value.Id != id || response.Value.Type != MessageType.CommandResponse)
-        Console.WriteLine($"Unknown response: {response}");
+    if (response.Id == id && response.Type == MessageType.CommandResponse)
+        Console.WriteLine(response.Body);
     else
-        Console.WriteLine(response.Value.Body);
+        Console.WriteLine($"Unknown response: {response}");
 }

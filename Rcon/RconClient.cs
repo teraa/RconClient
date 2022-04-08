@@ -9,13 +9,18 @@ namespace Teraa.Rcon;
 public interface IRconClient
 {
     ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken = default);
-    ValueTask<Message?> SendAsync(int id, MessageType type, string body, CancellationToken cancellationToken = default);
-    ValueTask<Message?> SendAsync(Message message, CancellationToken cancellationToken = default);
+    ValueTask<Message> SendAsync(Message message, CancellationToken cancellationToken = default);
+}
+
+public static class RconClientExtensions
+{
+    public static ValueTask<Message> SendAsync(this IRconClient client, int id, MessageType type, string body, CancellationToken cancellationToken = default)
+        => client.SendAsync(new Message(id, type, body), cancellationToken);
 }
 
 public class RconClient : IRconClient, IDisposable
 {
-    private const int s_minimumSize = sizeof(int) * 2 + 2;
+    private const int MinimumSize = sizeof(int) * 2 + 2;
 
     private readonly IClient _client;
     private Stream? _stream;
@@ -44,48 +49,36 @@ public class RconClient : IRconClient, IDisposable
 
     public async ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken = default)
     {
-        await _client.ConnectAsync(host, port, cancellationToken);
+        await _client.ConnectAsync(host, port, cancellationToken)
+            .ConfigureAwait(false);
+
         _stream = _client.GetStream();
         _reader = PipeReader.Create(_stream, new StreamPipeReaderOptions(useZeroByteReads: true));
 
         Connected = true;
     }
 
-    public ValueTask<Message?> SendAsync(int id, MessageType type, string body, CancellationToken cancellationToken = default)
-        => SendAsync(new Message(id, type, body), cancellationToken);
-
-    public async ValueTask<Message?> SendAsync(Message message, CancellationToken cancellationToken = default)
+    public async ValueTask<Message> SendAsync(Message message, CancellationToken cancellationToken = default)
     {
         if (!Connected)
             throw new InvalidOperationException("Client is not connected");
 
-        int bodyLength = Encoding.GetByteCount(message.Body);
-        byte[] buff = new byte[sizeof(int) + s_minimumSize + bodyLength];
-        await using var stream = new MemoryStream(buff);
-        await using var writer = new BinaryWriter(stream, Encoding);
+        byte[] buffer = WriteMessage(message);
 
-        writer.Write(s_minimumSize + bodyLength); // Size
-        writer.Write(message.Id); // ID
-        writer.Write((int)message.Type); // Type
+        _stream.Write(buffer);
 
-        // Manually writing to the byte array because BinaryWriter#Write(string value)
-        // method prefixes the output with the string length which we do not want here.
-        Encoding.GetBytes(message.Body, buff.AsSpan()[(int)stream.Position..]);
-        stream.Position += bodyLength;
+        await _stream.FlushAsync(cancellationToken)
+            .ConfigureAwait(false);
 
-        writer.Write((byte)0); // Null-terminated string
-        writer.Write((byte)0); // Terminator
+        var result = await _reader.ReadAtLeastAsync(MinimumSize, cancellationToken)
+            .ConfigureAwait(false);
 
-        _stream.Write(buff);
-        await _stream.FlushAsync(cancellationToken);
-
-        var result = await _reader.ReadAtLeastAsync(s_minimumSize, cancellationToken);
         try
         {
             if (result.IsCompleted || result.IsCanceled)
-                return null;
+                return default;
 
-            Debug.Assert(result.Buffer.Length >= 4);
+            Debug.Assert(result.Buffer.Length >= MinimumSize);
 
             var response = ReadMessage(result.Buffer);
             return response;
@@ -94,6 +87,28 @@ public class RconClient : IRconClient, IDisposable
         {
             _reader.AdvanceTo(result.Buffer.End);
         }
+    }
+
+    private byte[] WriteMessage(Message message)
+    {
+        int bodyLength = Encoding.GetByteCount(message.Body);
+        byte[] buffer = new byte[sizeof(int) + MinimumSize + bodyLength];
+        using var stream = new MemoryStream(buffer);
+        using var writer = new BinaryWriter(stream, Encoding);
+
+        writer.Write(MinimumSize + bodyLength); // Size
+        writer.Write(message.Id); // ID
+        writer.Write((int)message.Type); // Type
+
+        // Manually writing to the byte array because BinaryWriter#Write(string value)
+        // method prefixes the output with the string length which we do not want here.
+        Encoding.GetBytes(message.Body, buffer.AsSpan()[(int)stream.Position..]);
+        stream.Position += bodyLength;
+
+        writer.Write((byte)0); // Null-terminated string
+        writer.Write((byte)0); // Terminator
+
+        return buffer;
     }
 
     private Message ReadMessage(ReadOnlySequence<byte> sequence)

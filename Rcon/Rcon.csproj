@@ -17,6 +17,7 @@
     <PackageProjectUrl>https://github.com/teraa/RconClient</PackageProjectUrl>
     <RepositoryUrl>https://github.com/teraa/RconClient</RepositoryUrl>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <PackageVersion>2.0.0</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
