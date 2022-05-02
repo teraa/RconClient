@@ -48,12 +48,12 @@ jobs:
         if: >
           (github.event_name == 'push') ||
           (github.event_name == 'workflow_dispatch')
-        run: dotnet pack --configuration Release --no-build --output nupkgs --version-suffix alpha.$GITHUB_RUN_NUMBER
+        run: dotnet pack --configuration Release --no-build --output nupkgs -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix alpha.$GITHUB_RUN_NUMBER
 
       - name: Pack (Release)
         id: pack-release
         if: github.event_name == 'release'
-        run: dotnet pack --configuration Release --no-build --output nupkgs
+        run: dotnet pack --configuration Release --no-build --output nupkgs -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
 
       - name: Upload Artifacts
         if: >
