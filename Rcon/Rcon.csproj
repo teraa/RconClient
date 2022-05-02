@@ -8,7 +8,7 @@
     <AssemblyName>Teraa.Rcon</AssemblyName>
     <RootNamespace>Teraa.Rcon</RootNamespace>
     <PackageId>Teraa.RconClient</PackageId>
-    <VersionPrefix>2.0.1</VersionPrefix>
+    <VersionPrefix>2.0.2</VersionPrefix>
     <Authors>teraa</Authors>
     <Company>teraa</Company>
     <PackageTags>Source;RCON;Client;Minecraft</PackageTags>
